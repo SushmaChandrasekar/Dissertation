@@ -283,7 +283,7 @@ formula <- "censrec ~ s(age) + s(size) + s(nodes) + s(prog_recp) + s(estrg_recp)
 ctrl <- rfeControl(functions = rfFuncs, method = "cv", number = 5)
 
 # Perform RFE
-rfe_results <- rfe(x = x, y = gbcs_data$censrec, sizes = c(1, 2, 3, 4, 5), rfeControl = ctrl, 
+rfe_results <- rfe(x,y = gbcs_data$censrec, formula = formula, sizes = c(1, 2, 3, 4, 5), rfeControl = ctrl, 
                    method = "gam", tuneGrid = expand.grid(k = 1:5))
 
 # Print the selected features
