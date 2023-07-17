@@ -49,11 +49,13 @@ test_predictions <- predict(rf_model, newdata = test_data[, -8], type = "prob")
 # Perform predictions on the test data
 test_predictions_class <- predict(rf_model, newdata = test_data[, -8], type = "raw")
 
-# Calculate the AUC on the test data
-test_auc <- roc(as.vector(Y_test), as.vector(test_predictions[, 2]))$auc
+# Calculate the AUC with CI on the test data
+roc_obj <- roc(as.vector(Y_test), as.vector(test_predictions[, 2]))
+auc_with_ci <- ci.auc(roc_obj, conf.level = 0.95)
 
-# Print the results
-cat("Test AUC:", test_auc, "\n")
+# Print the AUC with CI
+cat("Test AUC:", round(roc_obj$auc, 3), "\n")
+cat("AUC CI:", round(auc_with_ci[1], 3), "-", round(auc_with_ci[3], 3), "\n")
 
 # Plot the ROC curve
 roc_obj <- roc(as.vector(Y_test), as.vector(test_predictions[, 2]))
@@ -131,14 +133,16 @@ logistic_model <- cv.glmnet(X_train, Y_train, family = "binomial", alpha = 0.5, 
 test_predictions <- predict(logistic_model, newx = X_test, s = logistic_model$lambda.min, type = "response")
 
 
-# Calculate the AUC on the test data
-test_auc <- roc(as.vector(Y_test), as.vector(test_predictions))$auc
-
-# Print the results
-cat("Test AUC:", test_auc, "\n")
-
-# Plot the ROC curve
+# Calculate the AUC with CI on the test data
 roc_obj <- roc(as.vector(Y_test), as.vector(test_predictions))
+auc_with_ci <- ci.auc(roc_obj, conf.level = 0.95)
+
+# Print the AUC with CI
+cat("Test AUC:", round(roc_obj$auc, 3), "\n")
+cat("AUC CI:", round(auc_with_ci[1], 3), "-", round(auc_with_ci[3], 3), "\n")
+
+# Plot the ROC curve with AUC and CI
+
 plot(roc_obj, main = "Receiver Operating Characteristic (ROC) Curve", print.auc = TRUE)
 
 # Plot AUC for each lambda value
