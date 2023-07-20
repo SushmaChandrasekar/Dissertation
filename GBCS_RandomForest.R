@@ -44,13 +44,13 @@ control <- trainControl(method = "cv", number = 10)
 rf_model <- train(x = train_data[, -8], y = Y_train, method = "rf", trControl = control, ntree = 500)
 
 # Perform predictions on the test data
-test_predictions <- predict(rf_model, newdata = test_data[, -8], type = "prob")
+test_predictions_rf <- predict(rf_model, newdata = test_data[, -8], type = "prob")
 
 # Perform predictions on the test data
 test_predictions_class <- predict(rf_model, newdata = test_data[, -8], type = "raw")
 
 # Calculate the AUC with CI on the test data
-roc_obj <- roc(as.vector(Y_test), as.vector(test_predictions[, 2]))
+roc_obj <- roc(as.vector(Y_test), as.vector(test_predictions_rf[, 2]))
 auc_with_ci <- ci.auc(roc_obj, conf.level = 0.95)
 
 # Print the AUC with CI
@@ -58,7 +58,7 @@ cat("Test AUC:", round(roc_obj$auc, 3), "\n")
 cat("AUC CI:", round(auc_with_ci[1], 3), "-", round(auc_with_ci[3], 3), "\n")
 
 # Plot the ROC curve
-roc_obj <- roc(as.vector(Y_test), as.vector(test_predictions[, 2]))
+roc_obj <- roc(as.vector(Y_test), as.vector(test_predictions_rf[, 2]))
 plot(roc_obj, main = "Receiver Operating Characteristic (ROC) Curve", print.auc = TRUE)
 
 
@@ -172,3 +172,59 @@ text(df$lambda[max_row], df$AUC[max_row]- 0.005, labels = paste("Max AUC =", rou
 
 # Add a legend
 legend("bottomright", legend = c("Maximum AUC", "Other values"), pch = c(19, 1), col = c("red", "black"))
+
+##############################################################################
+#--------------------------Bland Altman Analysis-----------------------------#
+##############################################################################
+
+
+
+library(blandr)
+library(ggplot2)
+
+# Create a data frame with the required columns
+table_data <- data.frame(
+  SNo = 1:length(test_predictions_rf[, 2]),
+  test_pred_rf = test_predictions_rf[, 2],
+  test_pred_en = round(test_predictions[, 1], 3),
+  Mean = round(rowMeans(cbind(test_predictions_rf[, 2], test_predictions[, 1])), 3),
+  Difference = round(abs(test_predictions_rf[, 2] - test_predictions[, 1]),3)
+)
+
+# Print the table
+print(table_data)
+
+
+blandr.draw( test_predictions_rf[, 2] , test_predictions[, 1] )
+blandr.statistics( test_predictions_rf[, 2] , test_predictions[, 1] )
+
+
+differences = round(abs(test_predictions_rf[, 2] - test_predictions[, 1]),3)
+
+# Calculate mean difference
+mean_difference <- mean(differences)
+
+# Calculate standard deviation of differences
+std_deviation <- sd(differences)
+
+# Calculate upper and lower limits of agreement (LOA)
+upper_loa <- mean_difference + (2 * std_deviation)
+lower_loa <- mean_difference - (2 * std_deviation)
+
+# Calculate range
+range_2s <- upper_loa - lower_loa
+
+# Count data points within ± 2s
+within_2s_count <- sum(differences >= lower_loa & differences <= upper_loa)
+
+# Calculate percentage within ± 2s
+percentage_within_2s <- (within_2s_count / length(differences)) * 100
+
+# Print the results
+cat("Mean Difference:", mean_difference, "\n")
+cat("Standard Deviation:", std_deviation, "\n")
+cat("Upper LOA:", upper_loa, "\n")
+cat("Lower LOA:", lower_loa, "\n")
+cat("Range within ± 2s:", range_2s, "\n")
+cat("Number of Data Points within ± 2s:", within_2s_count, "\n")
+cat("Percentage within ± 2s:", percentage_within_2s, "\n")
